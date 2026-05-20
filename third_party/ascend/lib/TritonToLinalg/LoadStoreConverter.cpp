@@ -79,6 +79,20 @@ const std::string MayImplicitTransposeWithLastAxisTAG =
 LogicalResult
 AddPtrConverter::matchAndRewrite(triton::AddPtrOp op, OpAdaptor adaptor,
                                  ConversionPatternRewriter &rewriter) const {
+  bool debugMode = false;
+  if (const char* env = std::getenv("TRITON_DEBUG"))
+    debugMode = (std::string(env) == "1");
+
+  if (debugMode) {
+     Location offsetsLoc = adaptor.getOffset().getLoc();
+     rewriter.create<LLVM::InlineAsmOp>(
+         offsetsLoc, TypeRange(), ValueRange(), "nop", "",
+         /*has_side_effects=*/true, /*is_align_stack=*/false,
+         LLVM::tailcallkind::TailCallKind::None,
+         LLVM::AsmDialectAttr::get(rewriter.getContext(),
+                                   LLVM::AsmDialect::AD_ATT),
+         ArrayAttr());
+  }
   llvm::SmallDenseMap<Value, BlockData> known;
   BlockDataParser::rewriteAddPtr(op, adaptor, rewriter, known);
   return success();

@@ -21,36 +21,56 @@
  */
 
 #include "ascend/include/TritonToLinalg/FunctionConverter.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/IR/location.h"
 
 namespace FunctionConverter {
 using namespace mlir;
 using namespace triton;
 
-LogicalResult GetProgramIDConverter::matchAndRewrite(
-    triton::GetProgramIdOp op, OpAdaptor adaptor,
-    ConversionPatternRewriter &rewriter) const {
-  auto axis = (uint32_t)op.getAxis();
-  assert(axis < GetProgramIDConverter::LAUNCH_GRID_RANK &&
-         "Invalid axis for GetProgramIdOp");
-  auto func = op->getParentOfType<FunctionOpInterface>();
-  auto numArgs = func.getNumArguments();
-  auto id = func.getArgument(numArgs - GetProgramIDConverter::LAUNCH_GRID_RANK +
-                             axis);
-  rewriter.replaceOp(op, id);
-  return success();
+static void insertDebugNop(Location loc, ConversionPatternRewriter &rewriter)
+{
+    bool debugMode = false;
+    if (const char *env = std::getenv("TRITON_DEBUG"))
+        debugMode = (std::string(env) == "1");
+    if (!debugMode)
+        return;
+
+    auto ctx = rewriter.getContext();
+    rewriter.create<LLVM::InlineAsmOp>(loc, TypeRange(), ValueRange(), "nop", "",
+                                       /*has_side_effects=*/true, /*is_align_stack=*/false,
+                                       LLVM::tailcallkind::TailCallKind::None,
+                                       LLVM::AsmDialectAttr::get(ctx, LLVM::AsmDialect::AD_ATT), ArrayAttr());
 }
 
-LogicalResult GetNumProgramsConverter::matchAndRewrite(
-    triton::GetNumProgramsOp op, OpAdaptor adaptor,
-    ConversionPatternRewriter &rewriter) const {
-  auto axis = (uint32_t)op.getAxis();
-  assert(axis < GetNumProgramsConverter::LAUNCH_GRID_RANK &&
-         "Invalid axis for GetNumProgramsOp");
-  auto func = op->getParentOfType<FunctionOpInterface>();
-  auto numArgs = func.getNumArguments();
-  auto id = func.getArgument(
-      numArgs - GetNumProgramsConverter::LAUNCH_GRID_RANK * 2 + axis);
-  rewriter.replaceOp(op, id);
-  return success();
+LogicalResult GetProgramIDConverter::matchAndRewrite(triton::GetProgramIdOp op, OpAdaptor adaptor,
+                                                     ConversionPatternRewriter &rewriter) const
+{
+    auto axis = (uint32_t)op.getAxis();
+    assert(axis < GetProgramIDConverter::LAUNCH_GRID_RANK && "Invalid axis for GetProgramIdOp");
+    auto func = op->getParentOfType<FunctionOpInterface>();
+    auto numArgs = func.getNumArguments();
+    auto id = func.getArgument(numArgs - GetProgramIDConverter::LAUNCH_GRID_RANK + axis);
+
+    Location pidLoc = op.getLoc();
+    insertDebugNop(pidLoc, rewriter);
+    rewriter.replaceOp(op, id);
+    return success();
+}
+
+LogicalResult GetNumProgramsConverter::matchAndRewrite(triton::GetNumProgramsOp op, OpAdaptor adaptor,
+                                                       ConversionPatternRewriter &rewriter) const
+{
+    auto axis = (uint32_t)op.getAxis();
+    assert(axis < GetNumProgramsConverter::LAUNCH_GRID_RANK && "Invalid axis for GetNumProgramsOp");
+    auto func = op->getParentOfType<FunctionOpInterface>();
+    auto numArgs = func.getNumArguments();
+    auto id = func.getArgument(numArgs - GetNumProgramsConverter::LAUNCH_GRID_RANK * 2 + axis);
+    bool debugMode = false;
+
+    Location numProgsLoc = op.getLoc();
+    insertDebugNop(numProgsLoc, rewriter);
+    rewriter.replaceOp(op, id);
+    return success();
 }
 } // namespace FunctionConverter
