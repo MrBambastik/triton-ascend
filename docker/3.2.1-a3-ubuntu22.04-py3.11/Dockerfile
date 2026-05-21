@@ -80,7 +80,7 @@ RUN ARCH=$(case "${TARGETPLATFORM}" in \
     CANN_TOOLKIT_URL=https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/CANN/CANN%209.0.0/Ascend-cann-toolkit_9.0.0_linux-${ARCH}.run && \
     CANN_OPS_URL=https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/CANN/CANN%209.0.0/Ascend-cann-A3-ops_9.0.0_linux-${ARCH}.run && \
     wget --quiet --header="Referer: https://www.hiascend.com/" ${CANN_TOOLKIT_URL} -O ~/Ascend-cann-toolkit.run && \
-    wget --quiet --header="Referer: https://www.hiascend.com/" ${CANN_OPS_URL} -O ~/Ascend-cann-ops.run 
+    wget --quiet --header="Referer: https://www.hiascend.com/" ${CANN_OPS_URL} -O ~/Ascend-cann-ops.run
 
 # Note: Install CANN Toolkit Development Kit Package
 RUN chmod +x ~/Ascend-cann-toolkit.run && \
@@ -115,7 +115,7 @@ RUN case "${TARGETPLATFORM}" in \
     esac && \
     pip3 install --no-cache-dir torch-npu==2.7.1.post4 --index-url ${PIP_SOURCE} && \
     pip3 install --no-cache-dir triton-ascend==3.2.1 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
-  
+
 # Stage 4: Copy results from previous stages
 FROM ubuntu:22.04 AS official-ubuntu
 
@@ -192,7 +192,7 @@ RUN apt-get update \
     && rm -rf /var/tmp/* \
     && rm -rf /tmp/* \
     && ln -s /usr/bin/clang-15 /usr/bin/clang \
-    && ln -s /usr/bin/clang++-15 /usr/bin/clang++ 
+    && ln -s /usr/bin/clang++-15 /usr/bin/clang++
 
 COPY --from=cann-installer /usr/local/python3.11.15 /usr/local/python3.11.15
 COPY --from=cann-installer /usr/local/Ascend /usr/local/Ascend
@@ -207,7 +207,7 @@ RUN \
     echo "alias ll='ls -l'" >> ~/.bashrc  && \
     echo "bash /etc/profile.d/copyright.sh" >> ~/.bashrc && \
     chmod 555 /etc/profile.d/copyright.sh
-    
+
 ENTRYPOINT ["/bin/bash", "-c", "\
     source /usr/local/Ascend/ascend-toolkit/set_env.sh && \
     bash /etc/profile.d/copyright.sh && \
