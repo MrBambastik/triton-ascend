@@ -25,6 +25,7 @@
 #include "ascend/include/TritonToLinalg/BlockPtrAnalysis.h"
 #include "ascend/include/TritonToLinalg/MaskAnalysis.h"
 #include "ascend/include/TritonToLinalg/TritonToLinalgPass.h"
+#include "ascend/include/Utils/DebugUtils.h"
 #include "ascend/include/Utils/Utils.h"
 #include "triton/Dialect/Triton/IR/Dialect.h"
 
@@ -854,6 +855,7 @@ LogicalResult
 SplatConverter::matchAndRewrite(triton::SplatOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &rewriter) const {
   auto loc = op.getLoc();
+  insertDebugNop(loc, rewriter);
   auto shape = op.getType().getShape();
   auto init = rewriter.create<tensor::EmptyOp>(loc, shape,
                                                op.getType().getElementType());
@@ -897,6 +899,7 @@ LogicalResult
 ReshapeConverter::matchAndRewrite(triton::ReshapeOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const {
   auto loc = op.getLoc();
+  insertDebugNop(loc, rewriter);
   auto src = op.getSrc();
   auto dst = op.getResult();
   Value shape = rewriter.create<arith::ConstantOp>(
@@ -912,6 +915,7 @@ LogicalResult ExpandDimsConverter::matchAndRewrite(
     triton::ExpandDimsOp op, OpAdaptor adaptor,
     ConversionPatternRewriter &rewriter) const {
   auto loc = op.getLoc();
+  insertDebugNop(loc, rewriter);
   auto src = op.getSrc();
   auto resShape = cast<ShapedType>(op.getResult().getType()).getShape();
   auto axis = op.getAxis();
@@ -1000,7 +1004,7 @@ BroadcastConverter::matchAndRewrite(triton::BroadcastOp op, OpAdaptor adaptor,
   RankedTensorType resultType = cast<RankedTensorType>(op.getType());
   auto elementType = resultType.getElementType();
   auto loc = op.getLoc();
-
+  insertDebugNop(loc, rewriter);
   auto initEmpty =
       rewriter.create<tensor::EmptyOp>(loc, resultType.getShape(), elementType);
 

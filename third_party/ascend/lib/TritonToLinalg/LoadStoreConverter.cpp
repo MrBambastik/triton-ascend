@@ -24,6 +24,7 @@
 #include "ascend/include/TritonToLinalg/BlockPtrAnalysis.h"
 #include "ascend/include/TritonToLinalg/MaskAnalysis.h"
 #include "ascend/include/TritonToLinalg/TritonToLinalgPass.h"
+#include "ascend/include/Utils/DebugUtils.h"
 #include "ascend/include/Utils/InterleaveOptimization.h"
 #include "ascend/include/Utils/Utils.h"
 
@@ -79,20 +80,8 @@ const std::string MayImplicitTransposeWithLastAxisTAG =
 LogicalResult
 AddPtrConverter::matchAndRewrite(triton::AddPtrOp op, OpAdaptor adaptor,
                                  ConversionPatternRewriter &rewriter) const {
-  bool debugMode = false;
-  if (const char* env = std::getenv("TRITON_DEBUG"))
-    debugMode = (std::string(env) == "1");
-
-  if (debugMode) {
-     Location offsetsLoc = adaptor.getOffset().getLoc();
-     rewriter.create<LLVM::InlineAsmOp>(
-         offsetsLoc, TypeRange(), ValueRange(), "nop", "",
-         /*has_side_effects=*/true, /*is_align_stack=*/false,
-         LLVM::tailcallkind::TailCallKind::None,
-         LLVM::AsmDialectAttr::get(rewriter.getContext(),
-                                   LLVM::AsmDialect::AD_ATT),
-         ArrayAttr());
-  }
+  Location loc = op.getLoc();
+  insertDebugNop(loc, rewriter);
   llvm::SmallDenseMap<Value, BlockData> known;
   BlockDataParser::rewriteAddPtr(op, adaptor, rewriter, known);
   return success();
@@ -595,7 +584,7 @@ AtomicRMWConverter::matchAndRewrite(triton::AtomicRMWOp op, OpAdaptor adaptor,
   auto rmwOp = op.getAtomicRmwOp();
   auto resType = dyn_cast<TensorType>(op.getResult().getType());
   auto ptrType = dyn_cast<MemRefType>(ptr.getType());
-
+  insertDebugNop(loc, rewriter);
   if (!resType)
     return rewriter.notifyMatchFailure(
         op, "atomicRMWConverter: scalar will be handled by "

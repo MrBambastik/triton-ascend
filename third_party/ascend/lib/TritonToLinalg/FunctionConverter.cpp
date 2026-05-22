@@ -21,27 +21,11 @@
  */
 
 #include "ascend/include/TritonToLinalg/FunctionConverter.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/IR/location.h"
+#include "ascend/include/Utils/DebugUtils.h"
 
 namespace FunctionConverter {
 using namespace mlir;
 using namespace triton;
-
-static void insertDebugNop(Location loc, ConversionPatternRewriter &rewriter)
-{
-    bool debugMode = false;
-    if (const char *env = std::getenv("TRITON_DEBUG"))
-        debugMode = (std::string(env) == "1");
-    if (!debugMode)
-        return;
-
-    auto ctx = rewriter.getContext();
-    rewriter.create<LLVM::InlineAsmOp>(loc, TypeRange(), ValueRange(), "nop", "",
-                                       /*has_side_effects=*/true, /*is_align_stack=*/false,
-                                       LLVM::tailcallkind::TailCallKind::None,
-                                       LLVM::AsmDialectAttr::get(ctx, LLVM::AsmDialect::AD_ATT), ArrayAttr());
-}
 
 LogicalResult GetProgramIDConverter::matchAndRewrite(triton::GetProgramIdOp op, OpAdaptor adaptor,
                                                      ConversionPatternRewriter &rewriter) const
