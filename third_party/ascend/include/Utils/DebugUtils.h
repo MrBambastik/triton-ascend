@@ -2,16 +2,18 @@
 #define ASCEND_UTILS_DEBUGUTILS_H
 
 #include <cstdlib>
-#include <string>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Location.h>
 #include <mlir/IR/Types.h>
 #include <mlir/Support/LLVM.h>
+#include <string>
 
-/// Insert a side‑effecting nop when TRITON_DEBUG=1 to preserve a source location.
-/// Must be called before the operation that carries the location is erased.
-inline void insertDebugNop(mlir::Location loc, mlir::ConversionPatternRewriter &rewriter) {
+/// Insert a side‑effecting nop when TRITON_DEBUG=1 to preserve a source
+/// location. Must be called before the operation that carries the location is
+/// erased.
+inline void insertDebugNop(mlir::Location loc,
+                           mlir::ConversionPatternRewriter &rewriter) {
   bool debugMode = false;
   if (const char *env = std::getenv("TRITON_DEBUG"))
     debugMode = (std::string(env) == "1");
@@ -26,8 +28,7 @@ inline void insertDebugNop(mlir::Location loc, mlir::ConversionPatternRewriter &
       /*asm_string=*/"nop",
       /*constraints=*/"",
       /*has_side_effects=*/true,
-      /*is_align_stack=*/false,
-      mlir::LLVM::tailcallkind::TailCallKind::None,
+      /*is_align_stack=*/false, mlir::LLVM::tailcallkind::TailCallKind::None,
       mlir::LLVM::AsmDialectAttr::get(ctx, mlir::LLVM::AsmDialect::AD_ATT),
       mlir::ArrayAttr());
 }
