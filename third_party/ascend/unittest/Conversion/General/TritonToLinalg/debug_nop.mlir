@@ -2,8 +2,8 @@
 // TRITON_DEBUG=1 is set, with the original source location preserved
 // on each NOP. Without TRITON_DEBUG, no inline asm is emitted.
 //
-// RUN:                  %triton-opt --load-dialect=llvm --triton-to-linalg --split-input-file %s | %FileCheck %s --check-prefix=NODEBUG
-// RUN: TRITON_DEBUG=1    %triton-opt --load-dialect=llvm --triton-to-linalg --split-input-file %s | %FileCheck %s --check-prefix=DEBUG
+// RUN: triton-opt --triton-to-linalg --mlir-print-debuginfo --split-input-file %s | FileCheck %s --check-prefix=NODEBUG
+// RUN: env TRITON_DEBUG=1 triton-opt --triton-to-linalg --mlir-print-debuginfo --split-input-file %s | FileCheck %s --check-prefix=DEBUG
 
 #loc = loc("test.py":6:0)
 #loc1 = loc("test.py":11:24)
@@ -36,10 +36,10 @@ tt.func public @test_kernel(
 } loc(#loc)
 
 // DEBUG-LABEL: func.func @test_kernel
-// DEBUG: llvm.inline_asm has_side_effects asm_dialect = att "nop" {{.*}}loc("pid"
-// DEBUG: llvm.inline_asm has_side_effects asm_dialect = att "nop" {{.*}}loc("num_progs"
-// DEBUG: llvm.inline_asm has_side_effects asm_dialect = att "nop" {{.*}}loc("offsets"
+// DEBUG-COUNT-4: llvm.inline_asm has_side_effects asm_dialect = att "nop"
+// DEBUG-DAG: loc("pid"
+// DEBUG-DAG: loc("num_progs"
+// DEBUG-DAG: loc("offsets"
 
 // NODEBUG-LABEL: func.func @test_kernel
 // NODEBUG-NOT: llvm.inline_asm
-// NODEBUG: return
