@@ -642,6 +642,8 @@ LogicalResult MapElementwiseOp::verifyRegions() {
 
 //-- SplatOp --
 OpFoldResult SplatOp::fold(FoldAdaptor adaptor) {
+  if (std::getenv("TRITON_DEBUG"))
+    return {};
   auto value = adaptor.getSrc();
   if (!value)
     return {};

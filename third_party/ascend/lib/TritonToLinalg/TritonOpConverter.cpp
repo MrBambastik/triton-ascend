@@ -468,6 +468,8 @@
                                                  "Unknown bitcast pattern");
             });
     if (succeeded(newRes)) {
+      if (auto splatOp = dyn_cast<triton::SplatOp>(beforeCastOp))
+        insertDebugNop(splatOp.getLoc(), rewriter);
       rewriter.replaceOp(bitcastOp, newRes.value());
       if (beforeCastOp->use_empty()) {
         rewriter.eraseOp(beforeCastOp);
@@ -796,6 +798,7 @@
       triton::MakeRangeOp op, OpAdaptor adaptor,
       ConversionPatternRewriter & rewriter) const {
     auto loc = op.getLoc();
+    insertDebugNop(loc, rewriter);
     auto type = cast<TensorType>(op.getResult().getType());
     auto shape = type.getShape();
     auto elementType = type.getElementType();
