@@ -942,6 +942,8 @@ void BroadcastOp::getCanonicalizationPatterns(RewritePatternSet &results,
 }
 
 OpFoldResult BroadcastOp::fold(FoldAdaptor adaptor) {
+  if (mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
+    return {};
   if (getType() == getSrc().getType()) {
     // no-op
     return getSrc();

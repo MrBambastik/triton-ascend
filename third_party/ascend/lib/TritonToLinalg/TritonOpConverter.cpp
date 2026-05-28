@@ -188,6 +188,7 @@
   LogicalResult TransposeConverter::matchAndRewrite(
       triton::TransOp op, OpAdaptor adaptor,
       ConversionPatternRewriter & rewriter) const {
+    insertDebugNop(op.getLoc(), rewriter);
     auto src = adaptor.getSrc();
     auto res = ConverterUtils::getTransposedValue(src, op.getLoc(), rewriter,
                                                   op.getOrder());
@@ -860,7 +861,7 @@
       triton::SplatOp op, OpAdaptor adaptor,
       ConversionPatternRewriter & rewriter) const {
     auto loc = op.getLoc();
-    insertDebugNop(loc, rewriter);
+    insertDebugNopForAllLines(loc, rewriter);
     auto shape = op.getType().getShape();
     auto init = rewriter.create<tensor::EmptyOp>(loc, shape,
                                                  op.getType().getElementType());
@@ -1009,7 +1010,7 @@
     RankedTensorType resultType = cast<RankedTensorType>(op.getType());
     auto elementType = resultType.getElementType();
     auto loc = op.getLoc();
-    insertDebugNop(loc, rewriter);
+    insertDebugNopForAllLines(loc, rewriter);
     auto initEmpty = rewriter.create<tensor::EmptyOp>(
         loc, resultType.getShape(), elementType);
 
@@ -1202,7 +1203,7 @@
       finalResult =
           rewriter.create<tensor::ExtractOp>(loc, constantType, finalResult);
     }
-
+    insertDebugNop(loc, rewriter);
     rewriter.replaceOp(op, finalResult);
     return success();
   }
@@ -1253,6 +1254,7 @@
       addReduceWithIndexAttr(*params, rewriter, linalgOp);
     }
 
+    insertDebugNop(loc, rewriter);
     if (isScalarReduce) {
       SmallVector<Value> reduceResults;
       for (auto i = 0; i < linalgOp.getResults().size() && i < elemTypes.size();

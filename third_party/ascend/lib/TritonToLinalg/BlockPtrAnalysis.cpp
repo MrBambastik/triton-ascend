@@ -1173,6 +1173,11 @@ void BlockDataParser::rewriteAddPtr(
   auto insertPoint = rewriter.saveInsertionPoint();
   rewriter.setInsertionPoint(op);
 
+  Location offLoc = op.getLoc();
+  if (Value off = op.getOffset())
+    if (Operation *defOp = off.getDefiningOp())
+      offLoc = defOp->getLoc();
+  insertDebugNop(offLoc, rewriter);
   BlockData data;
   parseAddPtr(op, data, op.getLoc(), rewriter, known);
 

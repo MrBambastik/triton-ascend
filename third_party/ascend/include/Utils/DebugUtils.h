@@ -33,12 +33,20 @@
 #include <triton/Tools/Sys/GetEnv.hpp>
 
 inline mlir::Location unwrapFusedLocForDebug(mlir::Location loc) {
+  // CallSiteLoc: syntax is callsite(callee at caller). For library calls like
+  // tl.sum -> callsite(standard.py:306 at kernel.py:36), the kernel line is the
+  // caller, so walk the caller side. Nested callsites walk back to the kernel.
+  if (auto cs = mlir::dyn_cast<mlir::CallSiteLoc>(loc))
+    return unwrapFusedLocForDebug(cs.getCaller());
   if (auto fused = mlir::dyn_cast<mlir::FusedLoc>(loc)) {
     for (auto inner : llvm::reverse(fused.getLocations())) {
       if (!mlir::isa<mlir::UnknownLoc>(inner))
         return unwrapFusedLocForDebug(inner);
     }
   }
+  // NameLoc wraps a child (e.g. "extra"(#loc...)); peel to the child.
+  if (auto named = mlir::dyn_cast<mlir::NameLoc>(loc))
+    return unwrapFusedLocForDebug(named.getChildLoc());
   return loc;
 }
 
@@ -62,6 +70,29 @@ inline void insertDebugNop(mlir::Location loc,
       /*is_align_stack=*/false, mlir::LLVM::tailcallkind::TailCallKind::None,
       mlir::LLVM::AsmDialectAttr::get(ctx, mlir::LLVM::AsmDialect::AD_ATT),
       mlir::ArrayAttr());
+}
+
+// Emit one NOP per distinct source line in a (possibly fused) location.
+// Covers the case where two source-level ops (e.g. tl.full + tl.broadcast_to)
+// collapse into a single op carrying a FusedLoc — each original line should
+// still get its own breakable PC.
+inline void
+insertDebugNopForAllLines(mlir::Location loc,
+                          mlir::ConversionPatternRewriter &rewriter) {
+  if (!mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
+    return;
+  if (auto fused = mlir::dyn_cast<mlir::FusedLoc>(loc)) {
+    llvm::SmallDenseSet<std::pair<unsigned, unsigned>> seen;
+    for (auto inner : fused.getLocations()) {
+      auto u = unwrapFusedLocForDebug(inner);
+      if (auto flc = mlir::dyn_cast<mlir::FileLineColLoc>(u)) {
+        if (seen.insert({flc.getLine(), flc.getColumn()}).second)
+          insertDebugNop(u, rewriter); // emits one NOP at this concrete loc
+      }
+    }
+    return;
+  }
+  insertDebugNop(loc, rewriter);
 }
 
 #endif // ASCEND_UTILS_DEBUGUTILS_H
