@@ -30,6 +30,7 @@
 #include <mlir/IR/Types.h>
 #include <mlir/Support/LLVM.h>
 #include <string>
+#include <triton/Tools/Sys/GetEnv.hpp>
 
 inline mlir::Location unwrapFusedLocForDebug(mlir::Location loc) {
   if (auto fused = mlir::dyn_cast<mlir::FusedLoc>(loc)) {
@@ -46,10 +47,7 @@ inline mlir::Location unwrapFusedLocForDebug(mlir::Location loc) {
 /// erased.
 inline void insertDebugNop(mlir::Location loc,
                            mlir::PatternRewriter &rewriter) {
-  bool debugMode = false;
-  if (const char *env = std::getenv("TRITON_DEBUG"))
-    debugMode = (std::string(env) == "1");
-  if (!debugMode)
+  if (!mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
     return;
   auto unwrapped = unwrapFusedLocForDebug(loc);
 
