@@ -25,6 +25,7 @@
 #include "ascend/include/Dialect/TritonAscend/IR/TritonAscendDialect.h"
 #include "ascend/include/TritonToLinalg/ArgMinMaxConverter.h"
 #include "ascend/include/TritonToLinalg/DescriptorConverter.h"
+#include "ascend/include/TritonToLinalg/DeduplicateDebugNopsPass.h"
 #include "ascend/include/TritonToLinalg/FunctionConverter.h"
 #include "ascend/include/TritonToLinalg/HoistBroadcast.h"
 #include "ascend/include/TritonToLinalg/ImplicitPermute.h"
@@ -960,6 +961,15 @@ void TritonToLinalgPass::runOnOperation() {
   pm.addPass(createCanonicalizerPass());
   if (failed(runPipeline(pm, getOperation()))) {
     signalPassFailure();
+  }
+
+  // 10. Deduplicate debug NOPs inserted by converters.
+  //     Opt-in via LLVM_EXTRACT_DI_LOCAL_VARIABLES=1.
+  PassManager pm(&getContext(), moduleOp.getOperationName());
+  pm.addPass(triton::createDeduplicateDebugNopsPass());
+  if (failed(runPipeline(pm, moduleOp))) {
+    moduleOp->emitWarning("DeduplicateDebugNops pass failed");
+    // Non-fatal: dedup is a quality improvement, not a correctness pass.
   }
 
   // Calculate size of PointerCastOp precisely

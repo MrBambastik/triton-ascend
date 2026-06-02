@@ -11,6 +11,7 @@ add_triton_library(TritonToLinalg
         ImplicitPermute.cpp
         DescriptorConverter.cpp
         MarkTensorKindPass.cpp
+        DeduplicateDebugNopsPass.cpp
 
   DEPENDS
   TritonToLinalgConversionPassIncGen
@@ -19,6 +20,7 @@ add_triton_library(TritonToLinalg
   MLIRArithDialect
   MLIRDialectUtils
   MLIRIR
+  MLIRLLVMDialect
   MLIRMathDialect
   MLIRPass
   MLIRTensorDialect
