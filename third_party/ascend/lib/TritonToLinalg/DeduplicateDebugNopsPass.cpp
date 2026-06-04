@@ -31,7 +31,8 @@ namespace triton {
 namespace {
 
 /// Unwrap nested locations (NameLoc, CallSiteLoc, FusedLoc) to find the
-/// underlying `FileLineColLoc`. Returns a null FileLineColLoc if nothing usable.
+/// underlying `FileLineColLoc`. Returns a null FileLineColLoc if nothing
+/// usable.
 FileLineColLoc unwrapToFileLineCol(Location loc, unsigned depth = 0) {
   // Bound recursion in case of unexpectedly nested locations.
   if (depth > 16)
@@ -132,9 +133,9 @@ struct DeduplicateDebugNopsPass
         op->erase();
     });
 
-    LLVM_DEBUG(llvm::dbgs() << "[dedup-nops] dropped " << totalDropped
-                            << " duplicate NOPs, kept " << totalKept
-                            << " unique anchors\n");
+    LLVM_DEBUG(llvm::dbgs()
+               << "[dedup-nops] dropped " << totalDropped
+               << " duplicate NOPs, kept " << totalKept << " unique anchors\n");
   }
 };
 
