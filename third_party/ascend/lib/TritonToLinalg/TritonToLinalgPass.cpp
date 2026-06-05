@@ -24,6 +24,7 @@
 #include "ascend/include/TritonToLinalg/TritonToLinalgPass.h"
 #include "ascend/include/Dialect/TritonAscend/IR/TritonAscendDialect.h"
 #include "ascend/include/TritonToLinalg/ArgMinMaxConverter.h"
+#include "ascend/include/TritonToLinalg/CanonicalizeDebugLocationsPass.h"
 #include "ascend/include/TritonToLinalg/DeduplicateDebugNopsPass.h"
 #include "ascend/include/TritonToLinalg/DescriptorConverter.h"
 #include "ascend/include/TritonToLinalg/FunctionConverter.h"
@@ -963,13 +964,26 @@ void TritonToLinalgPass::runOnOperation() {
     signalPassFailure();
   }
 
-  // 10. Deduplicate debug NOPs inserted by converters.
+  // 10. Collapses call-site locations whose callee is an inlined Triton stdlib
+  // helper (under site-packages) down to their caller (user-file) frame
   //     Opt-in via LLVM_EXTRACT_DI_LOCAL_VARIABLES=1.
-  PassManager pm(&getContext(), moduleOp.getOperationName());
-  pm.addPass(triton::createDeduplicateDebugNopsPass());
-  if (failed(runPipeline(pm, moduleOp))) {
-    moduleOp->emitWarning("DeduplicateDebugNops pass failed");
-    // Non-fatal: dedup is a quality improvement, not a correctness pass.
+  {
+    PassManager pm(&getContext(), moduleOp.getOperationName());
+    pm.addPass(triton::createCanonicalizeDebugLocationsPass());
+    if (failed(runPipeline(pm, moduleOp))) {
+      moduleOp->emitWarning("CanonicalizeDebugLocationsPass pass failed");
+    }
+  }
+
+  // 11. Deduplicate debug NOPs inserted by converters.
+  //     Opt-in via LLVM_EXTRACT_DI_LOCAL_VARIABLES=1.
+  {
+    PassManager pm(&getContext(), moduleOp.getOperationName());
+    pm.addPass(triton::createDeduplicateDebugNopsPass());
+    if (failed(runPipeline(pm, moduleOp))) {
+      moduleOp->emitWarning("DeduplicateDebugNops pass failed");
+      // Non-fatal: dedup is a quality improvement, not a correctness pass.
+    }
   }
 
   // Calculate size of PointerCastOp precisely
