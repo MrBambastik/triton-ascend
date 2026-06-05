@@ -1,9 +1,9 @@
 // Test: insertDebugNop emits llvm.inline_asm "nop" ops only when
-// TRITON_DEBUG=1 is set, with the original source location preserved
-// on each NOP. Without TRITON_DEBUG, no inline asm is emitted.
+// TRITON_DEBUG=1 and LLVM_EXTRACT_DI_LOCAL_VARIABLES=1 is set, with the original source location preserved
+// on each NOP. Without TRITON_DEBUG and LLVM_EXTRACT_DI_LOCAL_VARIABLES, no inline asm is emitted.
 //
 // RUN: triton-opt --triton-to-linalg --mlir-print-debuginfo --split-input-file %s | FileCheck %s --check-prefix=NODEBUG
-// RUN: env TRITON_DEBUG=1 triton-opt --triton-to-linalg --mlir-print-debuginfo --split-input-file %s | FileCheck %s --check-prefix=DEBUG
+// RUN: env TRITON_DEBUG=1 LLVM_EXTRACT_DI_LOCAL_VARIABLES=1 triton-opt --triton-to-linalg --mlir-print-debuginfo --split-input-file %s | FileCheck %s --check-prefix=DEBUG
 
 #loc = loc("test.py":6:0)
 #loc1 = loc("test.py":11:24)
@@ -31,8 +31,8 @@ tt.func public @test_kernel(
   %splat_ptr = tt.splat %ptr : !tt.ptr<f32> -> tensor<128x!tt.ptr<f32>>
   %addptr = tt.addptr %splat_ptr, %abs_offs : tensor<128x!tt.ptr<f32>>, tensor<128xi32> loc(#loc_offsets)
   // tl.full((128,), 1.0) lowers to: scalar constant + tt.splat to tensor<128xf32>.
-  // Without TRITON_DEBUG, SplatOp::fold collapses this into a dense<1.0> constant
-  // and the loc on the splat is lost. With TRITON_DEBUG=1, the fold is suppressed
+  // Without TRITON_DEBUG and LLVM_EXTRACT_DI_LOCAL_VARIABLES, SplatOp::fold collapses this into a dense<1.0> constant
+  // and the loc on the splat is lost. With TRITON_DEBUG=1 and LLVM_EXTRACT_DI_LOCAL_VARIABLES=1, the fold is suppressed
   // and SplatConverter emits a NOP carrying loc("scalar_one").
   %cst_one = arith.constant 1.000000e+00 : f32
   %full = tt.splat %cst_one : f32 -> tensor<128xf32> loc(#loc_full)

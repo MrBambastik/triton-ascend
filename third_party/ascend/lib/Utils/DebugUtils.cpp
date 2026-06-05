@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -68,7 +68,7 @@ Location unwrapFusedLocForDebug(Location loc) {
 }
 
 void insertDebugNop(Location loc, PatternRewriter &rewriter) {
-  if (!mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
+  if (!mlir::triton::tools::getBoolEnv("LLVM_EXTRACT_DI_LOCAL_VARIABLES"))
     return;
   auto unwrapped = unwrapFusedLocForDebug(loc);
 
@@ -86,7 +86,7 @@ void insertDebugNop(Location loc, PatternRewriter &rewriter) {
 
 void insertDebugNopForAllLines(Location loc,
                                ConversionPatternRewriter &rewriter) {
-  if (!mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
+  if (!mlir::triton::tools::getBoolEnv("LLVM_EXTRACT_DI_LOCAL_VARIABLES"))
     return;
 
   std::function<Location(Location)> deepUnwrap = [&](Location x) -> Location {

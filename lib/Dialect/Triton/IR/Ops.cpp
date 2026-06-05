@@ -643,7 +643,7 @@ LogicalResult MapElementwiseOp::verifyRegions() {
 
 //-- SplatOp --
 OpFoldResult SplatOp::fold(FoldAdaptor adaptor) {
-  if (mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
+  if (mlir::triton::tools::getBoolEnv("LLVM_EXTRACT_DI_LOCAL_VARIABLES"))
     return {};
   auto value = adaptor.getSrc();
   if (!value)
@@ -942,7 +942,7 @@ void BroadcastOp::getCanonicalizationPatterns(RewritePatternSet &results,
 }
 
 OpFoldResult BroadcastOp::fold(FoldAdaptor adaptor) {
-  if (mlir::triton::tools::getBoolEnv("TRITON_DEBUG"))
+  if (mlir::triton::tools::getBoolEnv("LLVM_EXTRACT_DI_LOCAL_VARIABLES"))
     return {};
   if (getType() == getSrc().getType()) {
     // no-op
