@@ -25,6 +25,7 @@
 
 #include <llvm/ADT/StringRef.h>
 #include <mlir/IR/Location.h>
+#include <mlir/IR/Value.h>
 
 namespace mlir {
 class Operation;
@@ -33,16 +34,20 @@ class ConversionPatternRewriter;
 } // namespace mlir
 
 //===----------------------------------------------------------------------===//
-// NOP insertion helpers (gated by TRITON_DEBUG). Definitions in DebugUtils.cpp.
+// NOP insertion helpers (gated by LLVM_EXTRACT_DI_LOCAL_VARIABLES). Definitions
+// in DebugUtils.cpp.
 //===----------------------------------------------------------------------===//
 
 /// Unwrap CallSiteLoc (caller-preferring) and FusedLoc (last non-unknown) down
 /// to a representative location for tagging a debug NOP.
 mlir::Location unwrapFusedLocForDebug(mlir::Location loc);
 
-/// Insert a side-effecting nop when TRITON_DEBUG=1 to preserve a source
-/// location. Must be called before the op carrying the location is erased.
+/// Insert a side-effecting nop when LLVM_EXTRACT_DI_LOCAL_VARIABLES=1 to
+/// preserve a source location. Must be called before the op carrying the
+/// location is erased.
 void insertDebugNop(mlir::Location loc, mlir::PatternRewriter &rewriter);
+
+void insertDebugNopForMask(mlir::Value mask, mlir::PatternRewriter &rewriter);
 
 /// As insertDebugNop, but when `loc` is a FusedLoc, inserts one nop per unique
 /// (line, column) across the fused sub-locations.
