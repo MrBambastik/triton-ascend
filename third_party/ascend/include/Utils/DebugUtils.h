@@ -38,9 +38,7 @@ class ConversionPatternRewriter;
 // in DebugUtils.cpp.
 //===----------------------------------------------------------------------===//
 
-/// Unwrap CallSiteLoc (caller-preferring) and FusedLoc (last non-unknown) down
-/// to a representative location for tagging a debug NOP.
-mlir::Location unwrapFusedLocForDebug(mlir::Location loc);
+mlir::Location unwrapFusedLocForDebug(mlir::Location loc, unsigned depth = 0);
 
 /// Insert a side-effecting nop when LLVM_EXTRACT_DI_LOCAL_VARIABLES=1 to
 /// preserve a source location. Must be called before the op carrying the
@@ -49,8 +47,6 @@ void insertDebugNop(mlir::Location loc, mlir::PatternRewriter &rewriter);
 
 void insertDebugNopForMask(mlir::Value mask, mlir::PatternRewriter &rewriter);
 
-/// As insertDebugNop, but when `loc` is a FusedLoc, inserts one nop per unique
-/// (line, column) across the fused sub-locations.
 void insertDebugNopForAllLines(mlir::Location loc,
                                mlir::ConversionPatternRewriter &rewriter);
 
@@ -64,26 +60,15 @@ namespace mlir {
 namespace triton {
 namespace debug {
 
-/// True if `filename` is an inlined library/stdlib file (under site-packages).
 bool isForeignFile(llvm::StringRef filename);
 
-/// True if `op` is one of our debug NOPs: llvm.inline_asm "nop", side effects,
-/// no results and no operands.
 bool isDebugNop(Operation *op);
 
-/// Resolve `loc` to the FileLineColLoc the user should see -- caller frame for
-/// call sites (via unwrapFusedLocForDebug), descending NameLoc. Returns a null
-/// FileLineColLoc if none is reachable.
 FileLineColLoc unwrapToUserFileLineCol(Location loc);
 
-/// Rewrite call-site locations whose callee resolves to a foreign (stdlib)
-/// file so they collapse to their caller (user) frame. Recurses through
-/// NameLoc / FusedLoc / nested call sites.
 Location collapseForeignCallsites(Location loc, unsigned depth = 0);
 
-/// Whitelist-free replacement for tools::getBoolEnv — reads the msdebug gate
-/// directly so no core-Triton (GetEnv.hpp) change is required.
-bool isMsdebugEnabled();
+bool isDebugNopEnabled();
 
 } // namespace debug
 } // namespace triton

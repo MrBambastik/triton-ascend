@@ -447,8 +447,7 @@ BitcastCanonicalizer::matchAndRewrite(triton::BitcastOp bitcastOp,
                                                "Unknown bitcast pattern");
           });
   if (succeeded(newRes)) {
-    if (auto splatOp = dyn_cast<triton::SplatOp>(beforeCastOp))
-      insertDebugNop(splatOp.getLoc(), rewriter);
+    insertDebugNop(beforeCastOp->getLoc(), rewriter);
     rewriter.replaceOp(bitcastOp, newRes.value());
     if (beforeCastOp->use_empty()) {
       rewriter.eraseOp(beforeCastOp);

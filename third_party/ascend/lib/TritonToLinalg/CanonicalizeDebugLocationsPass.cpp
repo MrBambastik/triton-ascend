@@ -62,8 +62,7 @@ struct CanonicalizeDebugLocationsPass
   }
 
   void runOnOperation() override {
-    // Opt-in via env var; no-op in production builds.
-    if (!mlir::triton::debug::isMsdebugEnabled())
+    if (!mlir::triton::debug::isDebugNopEnabled())
       return;
 
     unsigned rewritten = 0;

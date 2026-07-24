@@ -70,8 +70,7 @@ struct DeduplicateDebugNopsPass
   }
 
   void runOnOperation() override {
-    // Opt-in via env var; do nothing in production builds.
-    if (!mlir::triton::debug::isMsdebugEnabled())
+    if (!mlir::triton::debug::isDebugNopEnabled())
       return;
 
     ModuleOp moduleOp = getOperation();
@@ -79,9 +78,6 @@ struct DeduplicateDebugNopsPass
     unsigned totalKept = 0;
 
     moduleOp.walk([&](func::FuncOp func) {
-      // Per-function dedup: key = (filename, line). Column intentionally
-      // ignored -- for debugger stepping behaviour, two NOPs on the same line
-      // at different columns are equivalent.
       llvm::DenseSet<std::pair<StringRef, unsigned>> seen;
       llvm::SmallVector<Operation *, 16> toErase;
 
@@ -89,11 +85,9 @@ struct DeduplicateDebugNopsPass
         if (!mlir::triton::debug::isDebugNop(op))
           return;
 
-        // Resolve to the user's source line (caller frame for call sites).
         FileLineColLoc flc =
             mlir::triton::debug::unwrapToUserFileLineCol(op->getLoc());
         if (!flc) {
-          // No resolvable source location; leave the NOP alone.
           LLVM_DEBUG(llvm::dbgs()
                      << "[dedup-nops] NOP with no FileLineColLoc, keeping: "
                      << *op << "\n");

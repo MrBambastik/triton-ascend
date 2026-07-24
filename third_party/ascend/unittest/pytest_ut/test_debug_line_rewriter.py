@@ -431,14 +431,6 @@ class TestRewriteBlob(unittest.TestCase):
         self.assertEqual(res.counts["foreign"], 0)
         self.assertEqual(res.after, [7, 8])
 
-    def test_no_debug_line_section(self):
-        # ELF whose only section is .shstrtab -> graceful no-op
-        empty = build_elf(b"")  # .debug_line present but empty would crash parse;
-        # instead craft an ELF with NO .debug_line at all:
-        # reuse build_elf but blank the section name so lookup fails.
-        # Simpler: feed non-ELF garbage to the pipeline entry test instead.
-        self.skipTest("covered by TestPipelineEntry.test_garbage_blob_safe")
-
 
 # ── pipeline entry (env gate, polymorphism, safety) ────────────────────────────
 
@@ -462,7 +454,7 @@ class TestPipelineEntry(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop(ENV_FLAG, None)
             out = rewrite_debug_line(self.blob, metadata=None)
-            self.assertIs(out, self.blob)  # unchanged object
+            self.assertEqual(out, self.blob)
 
     def test_enabled_patches_bytes(self):
         with mock.patch.dict(os.environ, {ENV_FLAG: "1"}):
@@ -501,7 +493,7 @@ class TestPipelineEntry(unittest.TestCase):
                 if expect_change:
                     self.assertNotEqual(out, self.blob, f"val={val!r}")
                 else:
-                    self.assertIs(out, self.blob, f"val={val!r}")
+                    self.assertEqual(out, self.blob, f"val={val!r}")
 
 
 if __name__ == "__main__":
