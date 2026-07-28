@@ -430,6 +430,7 @@ BitcastCanonicalizer::matchAndRewrite(triton::BitcastOp bitcastOp,
                                                "Unknown bitcast pattern");
           });
   if (succeeded(newRes)) {
+    // Preserve debug location in case beforeCastOp is erased below.
     insertDebugNop(beforeCastOp->getLoc(), rewriter);
     rewriter.replaceOp(bitcastOp, newRes.value());
     if (beforeCastOp->use_empty()) {

@@ -754,14 +754,12 @@ void TritonToLinalgPass::populateTritonToLinalgConversionPatterns(
 }
 
 void TritonToLinalgPass::getDependentDialects(DialectRegistry &registry) const {
-  registry
-      .insert<func::FuncDialect, arith::ArithDialect, math::MathDialect,
-              linalg::LinalgDialect, affine::AffineDialect, scf::SCFDialect,
-              tensor::TensorDialect, bufferization::BufferizationDialect,
-              memref::MemRefDialect, hfusion::HFusionDialect, hivm::HIVMDialect,
-              annotation::AnnotationDialect, LLVM::LLVMDialect,
-              scope::ScopeDialect>();
-
+  registry.insert<func::FuncDialect, arith::ArithDialect, math::MathDialect,
+                  linalg::LinalgDialect, affine::AffineDialect, scf::SCFDialect,
+                  tensor::TensorDialect, bufferization::BufferizationDialect,
+                  memref::MemRefDialect, hfusion::HFusionDialect,
+                  hivm::HIVMDialect, annotation::AnnotationDialect,
+                  LLVM::LLVMDialect, scope::ScopeDialect>();
 }
 
 LogicalResult

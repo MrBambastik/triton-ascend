@@ -144,6 +144,8 @@ namespace triton {
 namespace debug {
 
 bool isForeignFile(llvm::StringRef filename) {
+  // A library/stdlib file inlined into the kernel (e.g. triton/language/
+  // standard.py). Heuristic: lives under a site-packages or dist-packages tree.
   return filename.contains("/site-packages/") ||
          filename.contains("/dist-packages/");
 }
