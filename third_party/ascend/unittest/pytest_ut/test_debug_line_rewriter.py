@@ -59,8 +59,6 @@ dlr.log.setLevel(_logging.CRITICAL)  # silence rewrite-skipped logs during tests
 
 rewrite_debug_line = dlr.rewrite_debug_line
 rewrite_debug_line_blob = dlr.rewrite_debug_line_blob
-rewrite_debug_line_file = dlr.rewrite_debug_line_file
-RewriteResult = dlr.RewriteResult
 ENV_FLAG = dlr.ENV_FLAG
 DW_LNS_ADVANCE_LINE = dlr.DW_LNS_ADVANCE_LINE
 DW_LNS_COPY = dlr.DW_LNS_COPY
