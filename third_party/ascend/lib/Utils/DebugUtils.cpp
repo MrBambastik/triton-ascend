@@ -95,27 +95,27 @@ void insertDebugNopForMask(mlir::Value mask, mlir::PatternRewriter &rewriter) {
     insertDebugNop(unwrapFusedLocForDebug(def->getLoc()), rewriter);
 }
 
-static void
-collectUserLineLocs(Location loc,
-                    llvm::SmallDenseSet<std::pair<unsigned, unsigned>> &seen,
-                    llvm::SmallVectorImpl<Location> &out, unsigned depth = 0) {
+static void collectUserLineLocs(Location loc,
+                                llvm::SmallDenseSet<Location> &seen,
+                                llvm::SmallVectorImpl<Location> &out,
+                                unsigned depth = 0) {
   if (depth > kMaxLocDepth)
     return;
   if (auto cs = dyn_cast<CallSiteLoc>(loc)) {
-    collectUserLineLocs(cs.getCaller(), seen, out, depth + 1); // user frame
+    collectUserLineLocs(cs.getCaller(), seen, out, depth + 1);
     return;
   }
   if (auto named = dyn_cast<NameLoc>(loc)) {
-    collectUserLineLocs(named.getChildLoc(), seen, out, depth + 1); // NameLoc
+    collectUserLineLocs(named.getChildLoc(), seen, out, depth + 1);
     return;
   }
   if (auto fused = dyn_cast<FusedLoc>(loc)) {
     for (Location inner : fused.getLocations())
-      collectUserLineLocs(inner, seen, out, depth + 1); // recurse nested
+      collectUserLineLocs(inner, seen, out, depth + 1);
     return;
   }
   if (auto flc = dyn_cast<FileLineColLoc>(loc))
-    if (seen.insert({flc.getLine(), flc.getColumn()}).second)
+    if (seen.insert(flc).second)
       out.push_back(loc);
 }
 
@@ -124,7 +124,7 @@ void insertDebugNopForAllLines(Location loc,
   if (!mlir::triton::debug::isDebugNopEnabled())
     return;
 
-  llvm::SmallDenseSet<std::pair<unsigned, unsigned>> seen;
+  llvm::SmallDenseSet<Location> seen;
   llvm::SmallVector<Location, 4> lineLocs;
   collectUserLineLocs(loc, seen, lineLocs);
   if (lineLocs.empty()) {
