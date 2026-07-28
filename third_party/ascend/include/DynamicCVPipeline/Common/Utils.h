@@ -36,9 +36,6 @@ namespace CVPipeline {
 inline constexpr llvm::StringLiteral kCoreType = "ssbuffer.core_type";
 inline constexpr llvm::StringLiteral kBlockId = "ssbuffer.block_id";
 inline constexpr llvm::StringLiteral kTransferId = "ssbuffer.transfer_id";
-inline constexpr llvm::StringLiteral kMatmulADep = "ssbuffer.adep";
-inline constexpr llvm::StringLiteral kMatmulBDep = "ssbuffer.bdep";
-inline constexpr llvm::StringLiteral kMatmulExtract = "ssbuffer.matmul_extract";
 inline constexpr llvm::StringLiteral kCubeFirst = "ssbuffer.cube_first";
 inline constexpr llvm::StringLiteral kVectorFirst = "ssbuffer.vector_first";
 inline constexpr llvm::StringLiteral kAddFromMatmul =
@@ -57,7 +54,7 @@ inline constexpr llvm::StringLiteral kAnalyzeFlagId =
     "ssbuffer.analyze_flag_id";
 inline constexpr llvm::StringLiteral kLoopCarriedL0C =
     "ssbuffer.loop_carried_l0c";
-inline constexpr llvm::StringLiteral kCrossDeps = "ssbuffer.crossDeps";
+inline constexpr llvm::StringLiteral kCrossCoreDeps = "ssbuffer.crossCoreDeps";
 inline constexpr llvm::StringLiteral kIntraDeps = "ssbuffer.intraDeps";
 inline constexpr llvm::StringLiteral kMemCrossDeps = "ssbuffer.memCrossDeps";
 inline constexpr llvm::StringLiteral kMayNotExec = "ssbuffer.may_not_exec";
@@ -75,6 +72,10 @@ inline constexpr const char *ERRCODE_ATTR =
     "triton_ascend.dynamic_cv_pipeline.rc";
 static constexpr const int ERRCODE_FAILED = 1;
 static constexpr const int ERRCODE_IGNORED = 2;
+constexpr int64_t CACHE_TABLE_BUFFER_SIZE = 4096;
+constexpr int64_t BYTE_SIZE = 8;
+static constexpr int crossCoreProducerId = 1;
+static constexpr int crossCoreConsumerId = 0;
 
 enum CoreType {
   UNDETERMINED = 0,
@@ -116,6 +117,10 @@ inline bool isCubeOp(Operation *op) {
 }
 
 bool isVectorOnlyOp(Operation *op);
+
+bool isScalarLike(Value value);
+bool isStoreLike(Operation *op);
+bool isViewLike(Operation *op);
 
 } // namespace CVPipeline
 } // namespace mlir
