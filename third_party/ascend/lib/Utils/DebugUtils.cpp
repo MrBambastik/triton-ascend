@@ -92,7 +92,7 @@ void insertDebugNopForMask(mlir::Value mask, mlir::PatternRewriter &rewriter) {
   if (!mask)
     return;
   if (mlir::Operation *def = mask.getDefiningOp())
-    insertDebugNop(unwrapFusedLocForDebug(def->getLoc()), rewriter);
+    insertDebugNop(def->getLoc(), rewriter);
 }
 
 static void collectUserLineLocs(Location loc,
@@ -119,8 +119,7 @@ static void collectUserLineLocs(Location loc,
       out.push_back(loc);
 }
 
-void insertDebugNopForAllLines(Location loc,
-                               ConversionPatternRewriter &rewriter) {
+void insertDebugNopForAllLines(Location loc, PatternRewriter &rewriter) {
   if (!mlir::triton::debug::isDebugNopEnabled())
     return;
 

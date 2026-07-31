@@ -48,7 +48,7 @@ void insertDebugNop(mlir::Location loc, mlir::PatternRewriter &rewriter);
 void insertDebugNopForMask(mlir::Value mask, mlir::PatternRewriter &rewriter);
 
 void insertDebugNopForAllLines(mlir::Location loc,
-                               mlir::ConversionPatternRewriter &rewriter);
+                               mlir::PatternRewriter &rewriter);
 
 //===----------------------------------------------------------------------===//
 // Shared location analysis / rewrite helpers used by the debug passes
@@ -64,6 +64,10 @@ bool isForeignFile(llvm::StringRef filename);
 
 bool isDebugNop(Operation *op);
 
+/// Resolve `loc` to the FileLineColLoc the user should see -- caller frame for
+/// call sites (via unwrapFusedLocForDebug), descending NameLoc.
+/// Returns a null FileLineColLoc when no user-facing file location is
+/// reachable; callers MUST check `if (!result)` before use.
 FileLineColLoc unwrapToUserFileLineCol(Location loc);
 
 Location collapseForeignCallsites(Location loc, unsigned depth = 0);
