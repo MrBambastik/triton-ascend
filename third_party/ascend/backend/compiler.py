@@ -36,7 +36,10 @@ from .debug_line_rewriter import rewrite_debug_line
 
 from triton._C.libtriton import ir, passes, ascend, buffer_ir
 from triton._C.libtriton.ascend import ir as ascend_ir
-
+try:
+    from triton._C.libtriton import distributed
+except ImportError:
+    distributed = None
 from triton.backends.ascend.utils import (
     _check_bishengir_api_change,
     _check_bishengir_able_save_ir,
@@ -205,6 +208,8 @@ def ttir_to_linalg(mod, metadata, opt, *, named_ops=False):
             auto_blockify_size = 1
         pm = ir.pass_manager(mod.context)
         pm.enable_debug()
+        if distributed is not None:
+            distributed.ascend_passes.ttgpuir.add_convert_triton_distributed_to_hivm(pm)
         # ascend.passes.ttir.add_auto_blockify(pm, auto_blockify_size)
 
         ascend.passes.ttir.add_triton_control_flow_opt(pm)
@@ -1037,7 +1042,7 @@ class NPUOptions:
     deprecated_fp8_dtypes: Tuple[str] = ()
     vf_merge_level: int = 1
     default_dot_input_precision: str = "ieee"
-    allowed_dot_input_precisions: Tuple[str] = ("ieee", "hf32", "tf32")
+    allowed_dot_input_precisions: Tuple[str] = ("ieee", "hf32")
     max_num_imprecise_acc_default: int = 0
     extern_libs: dict = None
     bisheng_options: str = "-cce-link-aicore-ll-module " + get_libdevice()
@@ -1279,6 +1284,8 @@ class AscendBackend(BaseBackend):
     def load_dialects(self, ctx):
         from triton._C.libtriton import buffer_ir
         from triton._C.libtriton.ascend import ir as ascend_ir
+        if distributed is not None:
+            distributed.ir.load_dialects(ctx)
         buffer_ir.load_dialects(ctx)
         ascend_ir.load_dialects(ctx)
         ascend.load_dialects(ctx)
