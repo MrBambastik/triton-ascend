@@ -59,7 +59,6 @@
 
 #include "bishengir/Dialect/Annotation/IR/Annotation.h"
 #include "bishengir/Dialect/HIVM/IR/HIVM.h"
-#include "bishengir/Dialect/Scope/IR/Scope.h"
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
@@ -513,13 +512,13 @@ void TritonToLinalgPass::convertTTFunc(triton::FuncOp func, const bool existDot,
 
 void TritonToLinalgPass::addDynamicLegal(
     ConversionTarget &target, TritonTypeConverter &tritonTypeConverter) {
-  target.addLegalDialect<
-      func::FuncDialect, arith::ArithDialect, math::MathDialect,
-      linalg::LinalgDialect, affine::AffineDialect, scf::SCFDialect,
-      cf::ControlFlowDialect, tensor::TensorDialect, LLVM::LLVMDialect,
-      bufferization::BufferizationDialect, memref::MemRefDialect,
-      annotation::AnnotationDialect, hivm::HIVMDialect, hfusion::HFusionDialect,
-      scope::ScopeDialect>();
+  target.addLegalDialect<func::FuncDialect, arith::ArithDialect,
+                         math::MathDialect, linalg::LinalgDialect,
+                         affine::AffineDialect, scf::SCFDialect,
+                         cf::ControlFlowDialect, tensor::TensorDialect,
+                         LLVM::LLVMDialect, bufferization::BufferizationDialect,
+                         memref::MemRefDialect, annotation::AnnotationDialect,
+                         hivm::HIVMDialect, hfusion::HFusionDialect>();
 
   // add legal dialect on condition
   target.addLegalOp<ModuleOp>();
