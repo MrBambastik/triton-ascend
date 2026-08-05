@@ -759,7 +759,7 @@ void TritonToLinalgPass::getDependentDialects(DialectRegistry &registry) const {
                   tensor::TensorDialect, bufferization::BufferizationDialect,
                   memref::MemRefDialect, hfusion::HFusionDialect,
                   hivm::HIVMDialect, annotation::AnnotationDialect,
-                  LLVM::LLVMDialect, scope::ScopeDialect>();
+                  LLVM::LLVMDialect>();
 }
 
 LogicalResult
