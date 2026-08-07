@@ -821,6 +821,8 @@ LogicalResult
 SplatConverter::matchAndRewrite(triton::SplatOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &rewriter) const {
   auto loc = op.getLoc();
+  // These NOPs are transient debug anchors: DeduplicateDebugNopsPass collapses
+  // them to one per source line before codegen.
   insertDebugNopForAllLines(loc, rewriter);
   auto shape = op.getType().getShape();
   auto init = rewriter.create<tensor::EmptyOp>(loc, shape,

@@ -74,11 +74,11 @@ struct DeduplicateDebugNopsPass
       return;
 
     ModuleOp moduleOp = getOperation();
-    unsigned totalDropped = 0;
-    unsigned totalKept = 0;
+    [[maybe_unused]] unsigned totalDropped = 0;
+    [[maybe_unused]] unsigned totalKept = 0;
 
     moduleOp.walk([&](func::FuncOp func) {
-      llvm::DenseSet<std::pair<StringRef, unsigned>> seen;
+      llvm::DenseSet<std::pair<std::string, unsigned>> seen;
       llvm::SmallVector<Operation *, 16> toErase;
 
       func.walk([&](Operation *op) {
@@ -94,7 +94,8 @@ struct DeduplicateDebugNopsPass
           return;
         }
 
-        auto key = std::make_pair(flc.getFilename().getValue(), flc.getLine());
+        auto key =
+            std::make_pair(flc.getFilename().getValue().str(), flc.getLine());
         if (!seen.insert(key).second) {
           toErase.push_back(op);
         }
@@ -107,9 +108,13 @@ struct DeduplicateDebugNopsPass
         op->erase();
     });
 
-    LLVM_DEBUG(llvm::dbgs()
-               << "[dedup-nops] dropped " << totalDropped
-               << " duplicate NOPs, kept " << totalKept << " unique anchors\n");
+    if (!flc) {
+      LLVM_DEBUG(llvm::dbgs()
+                 << "[dedup-nops] NOP with no FileLineColLoc, keeping: " << *op
+                 << "\n");
+      ++totalKept;
+      return;
+    }
   }
 };
 

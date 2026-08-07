@@ -65,7 +65,7 @@ struct CanonicalizeDebugLocationsPass
     if (!mlir::triton::debug::isDebugNopEnabled())
       return;
 
-    unsigned rewritten = 0;
+    [[maybe_unused]] unsigned rewritten = 0;
     getOperation().walk([&](Operation *op) {
       Location oldLoc = op->getLoc();
       Location newLoc = mlir::triton::debug::collapseForeignCallsites(oldLoc);

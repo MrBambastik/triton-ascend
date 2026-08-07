@@ -23,9 +23,13 @@
 // DebugUtils.cpp
 //
 // Implementations for DebugUtils.h:
-//   * LLVM_EXTRACT_DI_LOCAL_VARIABLES-gated NOP insertion helpers, and
+//   * NOP insertion helpers, runtime-gated via the
+//     LLVM_EXTRACT_DI_LOCAL_VARIABLES environment variable, and
 //   * the shared location analysis / rewrite helpers used by
 //     CanonicalizeDebugLocationsPass and DeduplicateDebugNopsPass.
+//
+// All definitions live in mlir::triton::debug; DebugUtils.h re-exports the NOP
+// helpers at global scope via using declarations.
 //===----------------------------------------------------------------------===//
 
 #include "Utils/DebugUtils.h"
@@ -36,7 +40,6 @@
 #include <mlir/IR/Location.h>
 #include <mlir/IR/Operation.h>
 #include <mlir/IR/PatternMatch.h>
-#include <mlir/Transforms/DialectConversion.h>
 
 #include <llvm/ADT/DenseSet.h>
 #include <llvm/ADT/STLExtras.h>
@@ -47,14 +50,18 @@
 #include <cctype>
 #include <cstdlib>
 #include <string>
-#include <utility>
 
 using namespace mlir;
 
+namespace mlir {
+namespace triton {
+namespace debug {
+
+// Guard against pathologically deep / cyclic location trees.
 static constexpr unsigned kMaxLocDepth = 16;
 
 //===----------------------------------------------------------------------===//
-// NOP insertion helpers (gated by LLVM_EXTRACT_DI_LOCAL_VARIABLES).
+// NOP insertion helpers.
 //===----------------------------------------------------------------------===//
 
 Location unwrapFusedLocForDebug(Location loc, unsigned depth) {
@@ -72,7 +79,7 @@ Location unwrapFusedLocForDebug(Location loc, unsigned depth) {
 }
 
 void insertDebugNop(Location loc, PatternRewriter &rewriter) {
-  if (!mlir::triton::debug::isDebugNopEnabled())
+  if (!isDebugNopEnabled())
     return;
   auto unwrapped = unwrapFusedLocForDebug(loc);
 
@@ -88,13 +95,16 @@ void insertDebugNop(Location loc, PatternRewriter &rewriter) {
       LLVM::AsmDialectAttr::get(ctx, LLVM::AsmDialect::AD_ATT), ArrayAttr());
 }
 
-void insertDebugNopForMask(mlir::Value mask, mlir::PatternRewriter &rewriter) {
+void insertDebugNopForMask(Value mask, PatternRewriter &rewriter) {
   if (!mask)
     return;
-  if (mlir::Operation *def = mask.getDefiningOp())
+  if (Operation *def = mask.getDefiningOp())
     insertDebugNop(def->getLoc(), rewriter);
 }
 
+// Collect every distinct user FileLineColLoc reachable through NameLoc /
+// CallSiteLoc / (nested) FusedLoc wrappers. Locations are context-uniqued, so
+// the Location handle itself is an exact dedup key (file, line, column).
 static void collectUserLineLocs(Location loc,
                                 llvm::SmallDenseSet<Location> &seen,
                                 llvm::SmallVectorImpl<Location> &out,
@@ -120,7 +130,7 @@ static void collectUserLineLocs(Location loc,
 }
 
 void insertDebugNopForAllLines(Location loc, PatternRewriter &rewriter) {
-  if (!mlir::triton::debug::isDebugNopEnabled())
+  if (!isDebugNopEnabled())
     return;
 
   llvm::SmallDenseSet<Location> seen;
@@ -138,13 +148,9 @@ void insertDebugNopForAllLines(Location loc, PatternRewriter &rewriter) {
 // Shared location analysis / rewrite helpers (no self-gating; passes gate).
 //===----------------------------------------------------------------------===//
 
-namespace mlir {
-namespace triton {
-namespace debug {
-
 bool isForeignFile(llvm::StringRef filename) {
   // A library/stdlib file inlined into the kernel (e.g. triton/language/
-  // standard.py). Heuristic: lives under a site-packages or dist-packages tree.
+  // standard.py). Heuristic: lives under a site-packages or dist-packages tree
   return filename.contains("/site-packages/") ||
          filename.contains("/dist-packages/");
 }
@@ -157,13 +163,16 @@ bool isDebugNop(Operation *op) {
     return false;
   if (asmOp.getAsmString() != "nop")
     return false;
+  // NOPs have no results and no operands.
   if (asmOp->getNumResults() != 0 || asmOp->getNumOperands() != 0)
     return false;
   return true;
 }
 
 FileLineColLoc unwrapToUserFileLineCol(Location loc) {
-  Location l = ::unwrapFusedLocForDebug(loc);
+  // Reuse the existing caller-preferring unwrapper, then descend NameLoc to the
+  // underlying FileLineColLoc. callsite(stdlib at user) -> the user's line.
+  Location l = unwrapFusedLocForDebug(loc);
   while (auto named = dyn_cast<NameLoc>(l))
     l = named.getChildLoc();
   return dyn_cast<FileLineColLoc>(l);
@@ -182,6 +191,8 @@ Location collapseForeignCallsites(Location loc, unsigned depth) {
 
   if (auto cs = dyn_cast<CallSiteLoc>(loc)) {
     Location caller = collapseForeignCallsites(cs.getCaller(), depth + 1);
+    // The callee is the inlined helper frame; resolve its own file. (The
+    // callee is not itself a call site, so caller-preference is moot here.)
     if (FileLineColLoc calleeFlc = unwrapToUserFileLineCol(cs.getCallee()))
       if (isForeignFile(calleeFlc.getFilename().getValue()))
         return caller;
@@ -208,6 +219,8 @@ Location collapseForeignCallsites(Location loc, unsigned depth) {
 }
 
 bool isDebugNopEnabled() {
+  // Environment variables do not change mid-process; read once. Function-local
+  // static initialisation is thread-safe since C++11.
   static const bool enabled = [] {
     const char *s = std::getenv("LLVM_EXTRACT_DI_LOCAL_VARIABLES");
     if (!s)
