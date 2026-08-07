@@ -122,6 +122,5 @@ bool isDebugNopEnabled();
 using mlir::triton::debug::insertDebugNop;
 using mlir::triton::debug::insertDebugNopForAllLines;
 using mlir::triton::debug::insertDebugNopForMask;
-using mlir::triton::debug::unwrapFusedLocForDebug;
 
 #endif // TRITON_ASCEND_UTILS_DEBUGUTILS_H

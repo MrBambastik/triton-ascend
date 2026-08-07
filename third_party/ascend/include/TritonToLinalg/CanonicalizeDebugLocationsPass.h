@@ -33,6 +33,9 @@
 #ifndef TRITON_ASCEND_TRITONTOLINALG_CANONICALIZEDEBUGLOCATIONSPASS_H
 #define TRITON_ASCEND_TRITONTOLINALG_CANONICALIZEDEBUGLOCATIONSPASS_H
 
+// This pass is added programmatically to the TritonToLinalg pipeline (see
+// compiler.py) rather than registered through TableGen, so it has no
+// Passes.td entry and no GEN_PASS_DECL include.
 #include "mlir/Pass/Pass.h"
 #include <memory>
 

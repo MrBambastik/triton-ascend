@@ -31,7 +31,7 @@
 // keys on the user's line rather than the inlined callee. Run this AFTER
 // CanonicalizeDebugLocationsPass.
 //
-// Gated by env var LLVM_EXTRACT_DI_LOCAL_VARIABLES=1.
+// Runtime-gated via the LLVM_EXTRACT_DI_LOCAL_VARIABLES environment variable.
 //===----------------------------------------------------------------------===//
 
 #include "TritonToLinalg/DeduplicateDebugNopsPass.h"
@@ -70,32 +70,40 @@ struct DeduplicateDebugNopsPass
   }
 
   void runOnOperation() override {
+    // Opt-in via env var; do nothing in production builds.
     if (!mlir::triton::debug::isDebugNopEnabled())
       return;
 
     ModuleOp moduleOp = getOperation();
+    // Only read inside LLVM_DEBUG, which is a no-op under NDEBUG.
     [[maybe_unused]] unsigned totalDropped = 0;
     [[maybe_unused]] unsigned totalKept = 0;
 
     moduleOp.walk([&](func::FuncOp func) {
-      llvm::DenseSet<std::pair<std::string, unsigned>> seen;
+      // Per-function dedup: key = (filename, line). Column intentionally
+      // ignored -- for debugger stepping behaviour, two NOPs on the same line
+      // at different columns are equivalent. The StringRef points into a
+      // StringAttr owned by the MLIRContext, which outlives this pass.
+      llvm::DenseSet<std::pair<StringRef, unsigned>> seen;
       llvm::SmallVector<Operation *, 16> toErase;
 
       func.walk([&](Operation *op) {
         if (!mlir::triton::debug::isDebugNop(op))
           return;
 
+        // Resolve to the user's source line (caller frame for call sites).
         FileLineColLoc flc =
             mlir::triton::debug::unwrapToUserFileLineCol(op->getLoc());
         if (!flc) {
+          // No resolvable source location; leave the NOP alone.
           LLVM_DEBUG(llvm::dbgs()
                      << "[dedup-nops] NOP with no FileLineColLoc, keeping: "
                      << *op << "\n");
+          ++totalKept;
           return;
         }
 
-        auto key =
-            std::make_pair(flc.getFilename().getValue().str(), flc.getLine());
+        auto key = std::make_pair(flc.getFilename().getValue(), flc.getLine());
         if (!seen.insert(key).second) {
           toErase.push_back(op);
         }
@@ -108,13 +116,9 @@ struct DeduplicateDebugNopsPass
         op->erase();
     });
 
-    if (!flc) {
-      LLVM_DEBUG(llvm::dbgs()
-                 << "[dedup-nops] NOP with no FileLineColLoc, keeping: " << *op
-                 << "\n");
-      ++totalKept;
-      return;
-    }
+    LLVM_DEBUG(llvm::dbgs()
+               << "[dedup-nops] dropped " << totalDropped
+               << " duplicate NOPs, kept " << totalKept << " unique anchors\n");
   }
 };
 

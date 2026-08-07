@@ -17,7 +17,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 """Unit tests for debug_line_rewriter.
 
 No real .npubin is needed: minimal ELF + DWARF-4 line programs are synthesized
