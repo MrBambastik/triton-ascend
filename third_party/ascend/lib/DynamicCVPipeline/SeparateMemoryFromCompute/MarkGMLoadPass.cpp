@@ -53,7 +53,7 @@ static constexpr const char *DEBUG_TYPE = "MarkGMLoad";
 namespace {
 
 static constexpr int kDefaultVBufferCount = 2;
-static constexpr int kDefaultCBufferCount = 2;
+static constexpr int kDefaultCBufferCount = 1;
 
 struct MarkCandidate {
   memref::CopyOp copyOp;

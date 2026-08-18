@@ -61,6 +61,7 @@ inline constexpr llvm::StringLiteral kLoopCarriedL0C =
 inline constexpr llvm::StringLiteral kCrossCoreDeps = "ssbuffer.crossCoreDeps";
 inline constexpr llvm::StringLiteral kIntraDeps = "ssbuffer.intraDeps";
 inline constexpr llvm::StringLiteral kMemCrossDeps = "ssbuffer.memCrossDeps";
+inline constexpr llvm::StringLiteral kDepMark = "ssbuffer.dep_mark";
 inline constexpr llvm::StringLiteral kMayNotExec = "ssbuffer.may_not_exec";
 inline constexpr llvm::StringLiteral kIterCounter = "ssbuffer.iterCounter";
 inline constexpr llvm::StringLiteral kClone = "ssbuffer.clone";
@@ -244,10 +245,11 @@ std::optional<int> getTightlyCoupledBufferId(Value allocVal);
 // `bufferization.to_tensor`'s source. Returns the input unchanged when no
 // such cast is found.
 Value traceBackToMemrefAlloc(Value v);
-int getLoopCarriedArgIndex(Value operand, Block *block);
 bool allResultHasOneUser(Operation *op);
 
 int64_t getBTSizeFromValidBroadcastOp(linalg::BroadcastOp broadcastOp);
+
+int getLoopCarriedArgIndex(Value operand, Block *block);
 
 } // namespace CVPipeline
 } // namespace mlir

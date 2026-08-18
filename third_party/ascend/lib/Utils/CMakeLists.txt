@@ -7,4 +7,6 @@ add_triton_library(MLIRTritonNPUUtils
   MLIRIR
   MLIRLLVMDialect
   TritonIR
+  TritonMemoryAccessAnalysis
+  TritonMemoryAccessCore
 )
